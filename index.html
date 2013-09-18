@@ -46,6 +46,7 @@
 	<div id="map"></div>
 	<script src="../lib/Leaflet-0.6.1/dist/leaflet.js"></script>
 	<script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.2"></script>
+	<script type="text/javascript" src="data/afg.js"></script>
 	<script type="text/javascript" src="data/imports.js"></script>
 	<script type="text/javascript" src="data/exports.js"></script>
 	<script type="text/javascript" src="data/balance.js"></script>
@@ -99,6 +100,7 @@
 		
 	    var imports, exports, balance;
 		
+		afg = L.geoJson(afgPoly, {style: afgStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
 		imports = L.geoJson(importsData, {style: importsStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
 		exports = L.geoJson(exportsData, {style: exportsStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
 		balance = L.geoJson(balanceData, {style: balanceStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
@@ -134,6 +136,16 @@
 					d > -500			?	'#106F89' :
 					d > -1000			?	'#093B49' :
 											'#ddd';
+		}
+		
+		function afgStyle(feature) {
+			return {
+				weight: 2,
+				opacity: .7,
+				color: 'black',
+				fillOpacity: 0.7,
+				fillColor: 'white'
+			};
 		}
 		
 		function importsStyle(feature) {
@@ -228,8 +240,8 @@
 		}
 
 		var map = L.map('map', {
-			center: [15, 10],
-			zoom: 1,
+			center: [34, 69],
+			zoom: 2,
 			minZoom: 1,
 			maxZoom: 4,
 			maxBounds: ([
