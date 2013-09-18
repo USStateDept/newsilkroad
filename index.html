@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>New Silk Road - Prototype</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<link rel="stylesheet" href="../lib/Leaflet-0.6.1/dist/leaflet.css" />
+	<link rel="shortcut icon" href="../img/eDip_logo.png" />
+	<!--[if lte IE 8]><link rel="stylesheet" href="../dist/leaflet.ie.css" /><![endif]-->
+	<style>
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map {
+			height: 100%;
+		}
+		.info {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+		}
+		.info h4 {
+			margin: 0 0 5px;
+			color: #777;
+		}
+
+		.legend {
+			text-align: left;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<script src="../lib/Leaflet-0.6.1/dist/leaflet.js"></script>
+	<script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.2"></script>
+	<script type="text/javascript" src="data/imports.js"></script>
+	<script type="text/javascript" src="data/exports.js"></script>
+	<script type="text/javascript" src="data/balance.js"></script>
+	<script type="text/javascript" src="data/corridor5.js"></script>
+	<script type="text/javascript" src="data/corridor6a.js"></script>
+	<script type="text/javascript" src="data/corridor6b.js"></script>
+	<script type="text/javascript" src="data/corridor6c.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_ADB.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_CAREC.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_ECO.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_NSTC.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_SAFTA.js"></script>
+	<script type="text/javascript" src="data/Afg_Reg_Data_TRACECA.js"></script>
+	<script type="text/javascript">
+
+		/*
+		This app demonstrates what we can do using Leaflet, choropleth mapping, feature mouseovers, and overlays. One key feature is the use of layer grouping with base maps, data layers, and overlays. Leaflet 0.6.1 source only allows for base maps (controlled with a radio button) and overlays (controlled with checkboxes). I added in another category to leaflet.js, "Data Layers", to control the choropleths. My thinking was that only one choropleth should be shown at a time, and that a user should be able to superimpose small vectors layers such as pipelines or facilities.
+		
+		The zoom level is limited to a regional scale so that the very generalized country polygons still hold up visually.
+		
+		The underlying data was originally a single shapefile with a field for each variable. In order not to bog down the app's speed and performance, each attribute needed to be parsed to an individual GeoJson. These GeoJsons have additional fields to describe the type of data ("Oil Reserves"), Year, and Unit of Measure. These additional fields, along with Country Name, are used to populate the info window on a rollover.
+		
+		This example does not use USG recognized boundaries or country names.
+		*/
+		
+		/* 
+		REFERENCES:
+		http://leafletjs.com/examples/choropleth.html
+		http://leafletjs.com/examples/layers-control.html
+		*/
+		
+		/*
+		Improvements Needed
+		1) Use USG recognized boundaries
+			To do this, we need to create the appropriately generalized and attributed shapefile.
+		2) Improve JavaScript styles to reduce code size.
+		3) Move data from GeoJsons into PostGIS
+		4) After a rollover or switching Data Layers, new layers are loaded on top of Overlays.
+		5) Have key update to reflect different data types/scales.
+			In this app, oil supplies on occupy the 3 lowest classes.
+		6) Have attribution update for whichever layer is currently displayed.
+		7) Add Labels overlay.
+		8) Legend labels: First class should be "No data".
+		*/
+		
+		var
+			cmAttr = '',
+			//cmAttr = 'Data: <a href="http://www.eia.gov/countries/data.cfm" title="U.S. Energy Information Administration">EIA</a>',
+			//cmAttr = 'Data: <a href="http://www.eia.gov/countries/data.cfm" title="U.S. Energy Information Administration">EIA</a>, <a href="http://www.openstreetmap.org/" title="&copy; OpenStreetMap contributors">OpenStreetMap</a>, <a href="http://www.cloudmade.com/" title="&copy; 2011 CloudMade">CloudMade</a>, <a href="http://www.stamen.com/" title="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.">Stamen Design</a>',
+			cmUrl = 'http://{s}.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/{styleId}/256/{z}/{x}/{y}.png';
+		
+	    var imports, exports, balance;
+		
+		imports = L.geoJson(importsData, {style: importsStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
+		exports = L.geoJson(exportsData, {style: exportsStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
+		balance = L.geoJson(balanceData, {style: balanceStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
+		corridor5 = L.geoJson(corridor5Data, {style: styleCorridor5, attribution: cmAttr});
+		corridor6a = L.geoJson(corridor6aData, {style: styleCorridor6, attribution: cmAttr});
+		corridor6b = L.geoJson(corridor6bData, {style: styleCorridor6, attribution: cmAttr});
+		corridor6c = L.geoJson(corridor6cData, {style: styleCorridor6, attribution: cmAttr});
+		adb = L.geoJson(adbData, {style: styleMember, attribution: cmAttr});
+		carec = L.geoJson(carecData, {style: styleMember, attribution: cmAttr});
+		eco = L.geoJson(ecoData, {style: styleMember, attribution: cmAttr});
+		nstc = L.geoJson(nstcData, {style: styleMember, attribution: cmAttr});
+		safta = L.geoJson(saftaData, {style: styleMember, attribution: cmAttr});
+		traceca = L.geoJson(tracecaData, {style: styleMember, attribution: cmAttr});
+		
+		var minimal   = L.tileLayer(cmUrl, {styleId: 22677, attribution: cmAttr}),
+		    midnight  = L.tileLayer(cmUrl, {styleId: 999, attribution: cmAttr}),
+			watercolor = new L.StamenTileLayer("watercolor", {attribution: cmAttr});
+
+		
+		// get color depending on OC11 value
+		function getColorAll(d) {
+			 return	d > 150				?	'#800026' :
+					d > 100 			?	'#BD0026' :
+					d > 50		  		?	'#E31A1C' :
+					d > 25				?	'#FC4E2A' :
+					d > 5				?	'#FD8D3C' :
+					d > -5 				?	'#CACF9B' :
+					d > -25				?	'#99DFF7' :
+					d > -50				?	'#51C5E8' :
+					d > -100			?	'#1AACD6' :
+					d > -150			?	'#18A2C9' :
+					d > -250			?	'#158DAF' :
+					d > -500			?	'#106F89' :
+					d > -1000			?	'#093B49' :
+											'#ddd';
+		}
+		
+		function importsStyle(feature) {
+			return {
+				weight: 1,
+				opacity: 1,
+				color: 'white',
+				fillOpacity: 0.7,
+				fillColor: getColorAll(feature.properties.Value)
+			};
+		}
+		
+		function exportsStyle(feature) {
+			return {
+				weight: 1,
+				opacity: 1,
+				color: 'white',
+				fillOpacity: 0.7,
+				fillColor: getColorAll(feature.properties.Value)
+			};
+		}
+		
+		function balanceStyle(feature) {
+			return {
+				weight: 1,
+				opacity: 1,
+				color: 'white',
+				fillOpacity: 0.7,
+				fillColor: getColorAll(feature.properties.Value)
+			};
+		}
+		
+		function styleCorridor5(feature) {
+			return {
+				weight: 3,
+				opacity: .75,
+				color: '#FF0000',
+			};
+		}
+		
+		function styleCorridor6(feature) {
+			return {
+				weight: 3,
+				opacity: .75,
+				color: '#FFFF00',
+			};
+		}
+		
+		function styleMember(feature) {
+			return {
+				weight: 1,
+				opacity: 1,
+				color: 'white',
+				fillOpacity: 0.9,
+				fillColor: '#66A841'
+			};
+		}
+		
+		function onEachFeature(feature, layer) {
+			layer.on({
+				mouseover: highlightFeature,
+				mouseout: resetHighlight,
+				click: zoomToFeature
+			});
+		}
+		
+		function highlightFeature(e) {
+			var layer = e.target;
+
+			layer.setStyle({
+				weight: 1.5,
+				color: '#666',
+				fillOpacity: 0.7
+			});
+
+			if (!L.Browser.ie && !L.Browser.opera) {
+				layer.bringToFront();
+			}
+
+			info.update(layer.feature.properties);
+		}
+
+		function resetHighlight(e) {
+			imports.resetStyle(e.target);
+			exports.resetStyle(e.target);
+			balance.resetStyle(e.target);
+			info.update();
+		}
+
+		function zoomToFeature(e) {
+			map.fitBounds(e.target.getBounds());
+		}
+
+		var map = L.map('map', {
+			center: [15, 10],
+			zoom: 1,
+			minZoom: 1,
+			maxZoom: 4,
+			maxBounds: ([
+				[84, 180],
+				[-60, -180]
+			]),
+			layers: [minimal, imports]
+		});
+
+		var baseLayers = {
+			"Minimal": minimal,
+			"Midnight": midnight,
+			"Watercolor":watercolor
+		};
+		
+		var dataLayers = {
+			"Imports (2012)":imports,
+			"Exports (2012)":exports,
+			"Trade Balance (2012)":balance
+		};
+
+		//If vector overlays such as roads, rivers, pipelines, etc are needed, add them here (AND add the layer group using using control.layers).
+		var overlays = {
+			"Asian Development Bank Member":adb,
+			"CAREC Member":carec,
+			"ECO Member":eco,
+			"NSTC Member":nstc,
+			"SAFTA Member":safta,
+			"TRACECA Member":traceca,
+			"CAREC Corridor 5":corridor5,
+			"CAREC Corridor 6a":corridor6a,
+			"CAREC Corridor 6b":corridor6b,
+			"CAREC Corridor 6c":corridor6c
+		};
+		
+		L.control.layers(baseLayers, dataLayers, overlays).addTo(map);
+		
+		// control that shows country info on hover
+		var info = L.control();
+
+		info.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info');
+			this.update();
+			return this._div;
+		};
+
+		info.update = function (props) {
+			this._div.innerHTML = (props ?
+				'<b>' + props.name + '</b><br />' + '<h4>' + props.Value_Type + ' (' + props.Year + ')</h4>' + props.Value + ' ' + props.Unit
+				: 'Hover over a country');
+		};
+
+		info.addTo(map);
+		
+		var legend = L.control({position: 'bottomleft'});
+
+		legend.onAdd = function (map) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [-1000, -500, -250, -150, -50, -25, -5 , 5, 25, 50, 100, 150],
+				labels = [],
+				from, to;				   
+				   
+			for (var i = 0; i < grades.length; i++) {
+				from = grades[i];
+				to = grades[i + 1];
+
+				labels.push(
+					'<i style="background:' + getColorAll(from + 1) + '"></i> ' +
+					from + (to ? ' to ' + to : '+'));
+			}
+
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+		legend.addTo(map);
+
+	</script>
+</body>
+</html>
