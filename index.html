@@ -92,12 +92,8 @@
 		8) Legend labels: First class should be "No data".
 		*/
 		
-		var
-			cmAttr = '',
-			//cmAttr = 'Data: <a href="http://www.eia.gov/countries/data.cfm" title="U.S. Energy Information Administration">EIA</a>',
-			//cmAttr = 'Data: <a href="http://www.eia.gov/countries/data.cfm" title="U.S. Energy Information Administration">EIA</a>, <a href="http://www.openstreetmap.org/" title="&copy; OpenStreetMap contributors">OpenStreetMap</a>, <a href="http://www.cloudmade.com/" title="&copy; 2011 CloudMade">CloudMade</a>, <a href="http://www.stamen.com/" title="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.">Stamen Design</a>',
-			cmUrl = 'http://{s}.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/{styleId}/256/{z}/{x}/{y}.png';
-		
+		var cmAttr = "<a href='mailto:dittemoremb@state.gov'>eDiplomacy Geo|DST</a>";
+			
 	    var imports, exports, balance;
 		
 		afg = L.geoJson(afgPoly, {style: afgStyle,onEachFeature: onEachFeature, attribution: cmAttr}),
@@ -247,9 +243,14 @@
 			maxBounds: ([
 				[84, 180],
 				[-60, -180]
-			]),
-			layers: [minimal, imports]
+			])
 		});
+			
+		L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: cmAttr,
+			id: 'examples.map-20v6611k'
+		}).addTo(map);
 
 		var baseLayers = {
 			"Minimal": minimal,
