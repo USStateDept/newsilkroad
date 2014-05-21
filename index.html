@@ -45,7 +45,6 @@
 <body>
 	<div id="map"></div>
 	<script src="../lib/Leaflet-0.6.1/dist/leaflet.js"></script>
-	<script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.2"></script>
 	<script type="text/javascript" src="data/afg.js"></script>
 	<script type="text/javascript" src="data/imports.js"></script>
 	<script type="text/javascript" src="data/exports.js"></script>
@@ -110,11 +109,6 @@
 		nstc = L.geoJson(nstcData, {style: styleMember, attribution: cmAttr});
 		safta = L.geoJson(saftaData, {style: styleMember, attribution: cmAttr});
 		traceca = L.geoJson(tracecaData, {style: styleMember, attribution: cmAttr});
-		
-		var minimal   = L.tileLayer(cmUrl, {styleId: 22677, attribution: cmAttr}),
-		    midnight  = L.tileLayer(cmUrl, {styleId: 999, attribution: cmAttr}),
-			watercolor = new L.StamenTileLayer("watercolor", {attribution: cmAttr});
-
 		
 		// get color depending on OC11 value
 		function getColorAll(d) {
@@ -251,13 +245,7 @@
 			attribution: cmAttr,
 			id: 'examples.map-20v6611k'
 		}).addTo(map);
-
-		var baseLayers = {
-			"Minimal": minimal,
-			"Midnight": midnight,
-			"Watercolor":watercolor
-		};
-		
+				
 		var dataLayers = {
 			"Imports (2012)":imports,
 			"Exports (2012)":exports,
@@ -278,7 +266,7 @@
 			"CAREC Corridor 6c":corridor6c
 		};
 		
-		L.control.layers(baseLayers, dataLayers, overlays).addTo(map);
+		L.control.layers(dataLayers, overlays).addTo(map);
 		
 		// control that shows country info on hover
 		var info = L.control();
